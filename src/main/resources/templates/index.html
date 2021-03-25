@@ -3,14 +3,12 @@
 <head>
     <title>Azure MySQL Todo Sample</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-
+    <meta name="context-path" th:content="@{/}"/>
     <!-- Bootstrap -->
     <link href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet"/>
-
 </head>
 <body style="padding-top:50px;">
  <!-- Nav Bar -->
-
   <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="container">
       <div class="navbar-header">
@@ -26,7 +24,8 @@
     <hr/>
 
   <div class = "todoList">
-    <form class="form-horizontal" role="form" th:action="@{/update}" th:object="${items}" method="POST">
+    <form class="form-horizontal" role="form" th:action="@{/todos}" th:object="${items}" method="POST">
+      <input type="hidden" name="_method" value="put" />
       <table class="table table-bordered table-striped" id="todoItems">
         <thead>
           <tr>
@@ -53,7 +52,8 @@
 
     <!-- Item Input Form -->
     <div class="todoForm">
-      <form class="form-horizontal" role="form" th:action="@{/add}" th:object="${newitem}" method="POST">
+      <form class="form-horizontal" role="form" th:action="@{/todos}" th:object="${newitem}" method="POST">
+        <input type="hidden" name="_method" value="post" />
         <div class="form-group">
           <label for="inputItemName" class="col-sm-2">Task Name</label>
           <div class="col-sm-10">
@@ -78,6 +78,5 @@
   <!-- Placed at the end of the document so the pages load faster -->
   <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.1.min.js"></script>
   <script src="https://ajax.aspnetcdn.com/ajax/bootstrap/3.2.0/bootstrap.min.js"></script>
-
 </body>
 </html>

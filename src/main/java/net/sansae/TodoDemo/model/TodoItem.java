@@ -1,4 +1,4 @@
-package com.example.fabrikam.TodoDemo;
+package net.sansae.TodoDemo.model;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

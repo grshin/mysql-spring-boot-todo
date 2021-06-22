@@ -1,0 +1,40 @@
+# deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-deployment
+  labels:
+    app: todo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo
+  template:
+    metadata:
+      labels:
+        app: todo
+    spec:
+      containers:
+      - name: todo
+        image: grshin/todo:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        # evn 값에 ConfigMap과 Secret을 매칭한다.
+        env:
+        - name: MYSQL_URL
+          valueFrom:
+            configMapKeyRef:
+              name: todo-config
+              key: mysql_url
+        - name: MYSQL_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: todo-config
+              key: mysql_username
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: todo-secret
+              key: mysql_password

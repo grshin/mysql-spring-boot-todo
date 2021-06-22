@@ -1,0 +1,20 @@
+# configMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-config
+  namespace: default
+
+data:
+  mysql_url: "jdbc:mysql://mysql:3306/tododb?useSSL=true&requireSSL=false&serverTimezone=Asia/Seoul"
+  mysql_username: "todouser"
+---
+# secret
+apiVersion: v1
+data:
+  mysql_password: c3B0ZWsxMDA0IUAj
+kind: Secret
+metadata:
+  name: todo-secret
+  namespace: default
+type: Opaque

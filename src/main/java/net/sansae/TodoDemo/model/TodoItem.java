@@ -9,7 +9,7 @@ import javax.persistence.Id;
 public class TodoItem {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
     private String category;
     private String name;

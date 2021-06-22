@@ -1,0 +1,76 @@
+# configMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-config
+  namespace: default
+
+data:
+  mysql_url: "jdbc:mysql://sptek-cvp-dev-mysql.mysql.database.azure.com:3306/tododb?useSSL=true&requireSSL=false&serverTimezone=Asia/Seoul"
+  mysql_username: "todouser@sptek-cvp-dev-mysql"
+
+---
+# secret
+apiVersion: v1
+data:
+  mysql_password: c3B0ZWsxMDA0IUAj
+kind: Secret
+metadata:
+  name: todo-secret
+  namespace: default
+type: Opaque
+
+---
+# deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-deployment
+  labels:
+    app: todo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo
+  template:
+    metadata:
+      labels:
+        app: todo
+    spec:
+      containers:
+      - name: todo
+        image: grshin/todo:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MYSQL_URL
+          valueFrom:
+            configMapKeyRef:
+              name: todo-config
+              key: mysql_url
+        - name: MYSQL_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: todo-config
+              key: mysql_username
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: todo-secret
+              key: mysql_password
+
+---
+# service
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-service
+spec:
+  selector:
+    app: todo
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

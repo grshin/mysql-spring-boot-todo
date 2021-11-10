@@ -5,9 +5,12 @@ stages:
 
 variables:
   #IMAGE_NAME: reg.learnk8s.net/dev/mysql-spring-boot-todo/todo:latest
-  IMAGE_NAME: $CI_REGISTRY_IMAGE/todo:latest
+  #IMAGE_NAME: $CI_REGISTRY_IMAGE/todo:latest
   #IMAGE_NAME_VER: reg.learnk8s.net/dev/mysql-spring-boot-todo/todo:v${CI_PIPELINE_IID}
-  IMAGE_NAME_VER: $CI_REGISTRY_IMAGE/todo:v$CI_PIPELINE_IID
+  #IMAGE_NAME_VER: $CI_REGISTRY_IMAGE/todo:v$CI_PIPELINE_IID
+  CI_REGISTRY: reg.learnk8s.net/dev/mysql-spring-boot-todo/todo
+  IMAGE_NAME: $CI_REGISTRY:latest
+  IMAGE_NAME_VER: $CI_REGISTRY:v$CI_PIPELINE_IID
 
 cache:
   paths:

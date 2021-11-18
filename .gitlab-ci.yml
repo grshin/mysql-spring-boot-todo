@@ -36,10 +36,7 @@ build:
     - docker info
     - docker login reg.learnk8s.net -u "$DOCKER_TOKEN_ID" -p "$DOCKER_TOKEN_PASSWORD"
     - docker build -t "$IMAGE_NAME" .
-    - docker build -t "$IMAGE_NAME_VER" .
     - docker push "$IMAGE_NAME"
-    - docker push "$IMAGE_NAME_VER"
-    - docker rmi "$IMAGE_NAME_VER"
     - export temp=$(docker images -f dangling=true -q)
     - echo "$temp"
     - if ["$temp" !="" ]; then docker rmi -f "$(docker images -f 'dangling=true' -q)"; else docker image prune -f; fi
@@ -48,5 +45,4 @@ deploy:
   stage: deploy
   script:
     - echo "$CI_JOB_STAGE"
-    - docker-compose -f docker-compose.yml down
-    - docker-compose -f docker-compose.yml up -d
+    - kubectl get ns

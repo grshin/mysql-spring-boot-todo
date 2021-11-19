@@ -1,6 +1,7 @@
 stages:
   - setup
-  - build
+  - maven_build
+  - docker_build
   - deploy
 
 variables:
@@ -27,22 +28,50 @@ setup:
     #- if ["$temp" !="" ]; then docker rmi -f "$(docker images -f 'dangling=true' -q)"; else docker image prune -f; fi
     # - env
 
-build:
-  stage: build
+maven_build:
+  stage: maven_build
+  image: maven:3.8.3-jdk-11-slim
   script:
     - echo "$CI_JOB_STAGE"
     - mvn clean package
     - ls -lah
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - m2/repository
+  artifacts:
+    paths:
+      - target/*.jar
+    expire_in: 1 week
+
+docker_build:
+  stage: docker_build
+  image: docker:stable
+  #services:
+  #  - docker:dind
+  script:
+    - echo "$CI_JOB_STAGE"
     - docker info
     - docker login reg.learnk8s.net -u "$DOCKER_TOKEN_ID" -p "$DOCKER_TOKEN_PASSWORD"
+    #- echo "$DOCKER_TOKEN_PASSWORD" | docker login reg.learnk8s.net --username "$DOCKER_TOKEN_ID" --password-stdin
     - docker build -t "$IMAGE_NAME" .
     - docker push "$IMAGE_NAME"
     - export temp=$(docker images -f dangling=true -q)
     - echo "$temp"
     - if ["$temp" !="" ]; then docker rmi -f "$(docker images -f 'dangling=true' -q)"; else docker image prune -f; fi
+  artifacts:
+    paths:
+      - node_modules
+      - package-lock.json
+    expire_in: 1 week
 
 deploy:
   stage: deploy
+  environment:
+    name: production
+    url: http://api.learnk8s.net:8080/
+  image: roffe/kubectl
   script:
     - echo "$CI_JOB_STAGE"
     - kubectl get ns
+    - kubectl run nginx --image=nginx

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: todo-deployment
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: todo
@@ -13,62 +13,48 @@ spec:
         app: todo
     spec:
       imagePullSecrets:
-        - name: regcred
+      - name: regcred
       containers:
-        - name: todo
-          image: sooabia/todo:2
-          imagePullPolicy: Always
-          resources:
-            limits:
-              cpu: "1"
-              memory: "1Gi"
-            requests:
-              cpu: "1"
-              memory: "1Gi"
-          env:
-          - name: JAVA_OPTS
-            valueFrom:
-              configMapKeyRef:
-                name: todo-config
-                key: JAVA_OPTS
-          - name: MYSQL_URL
-            valueFrom:
-              configMapKeyRef:
-                name: todo-mysql-config
-                key: MYSQL_URL
-          - name: MYSQL_USERNAME
-            valueFrom:
-              configMapKeyRef:
-                name: todo-mysql-config
-                key: MYSQL_USERNAME
-          - name: MYSQL_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: todo-mysql-secret
-                key: MYSQL_PASSWORD
-          ports:
-            - name: http
-              containerPort: 8080
-          readinessProbe:
-            httpGet:
-              port: http
-              path: /actuator/health/readiness
-            failureThreshold: 3
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 3
-          livenessProbe:
-            httpGet:
-              port: http
-              path: /actuator/health/liveness
-            failureThreshold: 3
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 3
-          startupProbe:
-            httpGet:
-              port: http
-              path: /actuator/health
-            initialDelaySeconds: 60
-            failureThreshold: 5
-            periodSeconds: 10
+      - name: todo
+        image: grshin/todo:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 0.5
+            memory: "500Mi"
+          requests:
+            cpu: 0.5
+            memory: "500Mi"
+        envEnv:
+        - configMapRef:
+            name: todo-config
+        - configMapRef:
+            name: todo-mysql-config
+        - secretRef:
+            name: todo-mysql-secret
+        ports:
+          - name: http
+            containerPort: 8080
+        readinessProbe:
+          httpGet:
+            port: http
+            path: /actuator/health/readiness
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 3
+        #livenessProbe:
+        #  httpGet:
+        #    port: http
+        #    path: /actuator/health/liveness
+        #  failureThreshold: 3
+        #  periodSeconds: 10
+        #  successThreshold: 1
+        #  timeoutSeconds: 3
+        startupProbe:
+          httpGet:
+            port: http
+            path: /actuator/health
+          initialDelaySeconds: 60
+          failureThreshold: 5
+          periodSeconds: 10

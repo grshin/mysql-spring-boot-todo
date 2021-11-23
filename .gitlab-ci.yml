@@ -5,40 +5,27 @@ stages:
   - deploy
 
 variables:
-  #IMAGE_NAME: reg.learnk8s.net/dev/mysql-spring-boot-todo/todo:latest
-  #IMAGE_NAME: $CI_REGISTRY_IMAGE/todo:latest
-  #IMAGE_NAME_VER: reg.learnk8s.net/dev/mysql-spring-boot-todo/todo:v${CI_PIPELINE_IID}
-  #IMAGE_NAME_VER: $CI_REGISTRY_IMAGE/todo:v$CI_PIPELINE_IID
-  CI_REGISTRY: reg.learnk8s.net/dev/mysql-spring-boot-todo/todo
-  IMAGE_NAME: $CI_REGISTRY:latest
-  IMAGE_NAME_VER: $CI_REGISTRY:v$CI_PIPELINE_IID
-
-cache:
-  paths:
-    - .m2/repository
+  IMAGE_NAME: $CI_REGISTRY_IMAGE/todo:v$CI_PIPELINE_IID
+  NAME_SPACE: "default"
 
 setup:
   stage: setup
   script:
-    - echo "$CI_JOB_STAGE"
-    - echo "$IMAGE_NAME"
-    - echo "$IMAGE_NAME_VER"
-    #- export temp=$(docker images -f dangling=true -q)
-    #- echo "$temp"
-    #- if ["$temp" !="" ]; then docker rmi -f "$(docker images -f 'dangling=true' -q)"; else docker image prune -f; fi
-    # - env
+    - echo $CI_JOB_STAGE
+    - echo $IMAGE_NAME
+    #- env
 
 maven_build:
   stage: maven_build
   image: maven:3.8.3-jdk-11-slim
   script:
-    - echo "$CI_JOB_STAGE"
+    - echo $CI_JOB_STAGE
     - mvn clean package
-    - ls -lah
+    #- ls -lah
   cache:
-    key: ${CI_COMMIT_REF_SLUG}
+    key: $CI_COMMIT_REF_SLUG
     paths:
-      - m2/repository
+      - .m2/repository
   artifacts:
     paths:
       - target/*.jar
@@ -47,22 +34,20 @@ maven_build:
 docker_build:
   stage: docker_build
   image: docker:stable
-  #services:
-  #  - docker:dind
+  services:
+    - docker:dind
   script:
-    - echo "$CI_JOB_STAGE"
-    - docker info
-    - docker login reg.learnk8s.net -u "$DOCKER_TOKEN_ID" -p "$DOCKER_TOKEN_PASSWORD"
-    #- echo "$DOCKER_TOKEN_PASSWORD" | docker login reg.learnk8s.net --username "$DOCKER_TOKEN_ID" --password-stdin
-    - docker build -t "$IMAGE_NAME" .
-    - docker push "$IMAGE_NAME"
+    - echo $CI_JOB_STAGE
+    #- echo $CI_REGISTRY
+    - docker login -u "gitlab-ci-token" -p $CI_JOB_TOKEN $CI_REGISTRY # user "gitlab-ci-token" is automatically created by GitLab
+    - docker build -t $IMAGE_NAME .
+    - docker push $IMAGE_NAME
     - export temp=$(docker images -f dangling=true -q)
-    - echo "$temp"
-    - if ["$temp" !="" ]; then docker rmi -f "$(docker images -f 'dangling=true' -q)"; else docker image prune -f; fi
+    - echo $temp
+    - if [ $temp !="" ]; then docker rmi -f "$(docker images -f 'dangling=true' -q)"; else docker image prune -f; fi
   artifacts:
     paths:
-      - node_modules
-      - package-lock.json
+      - manifests/k8s
     expire_in: 1 week
 
 deploy:
@@ -70,8 +55,21 @@ deploy:
   environment:
     name: production
     url: http://api.learnk8s.net:8080/
-  image: roffe/kubectl
+  image: 
+    name: grshin/kubectl:1.20.13-r1
+    entrypoint: [""]
+  before_script:
+    - kubectl version
   script:
-    - echo "$CI_JOB_STAGE"
+    - echo $CI_JOB_STAGE
     - kubectl get ns
-    - kubectl run nginx --image=nginx
+    - kubectl config set-context --current --namespace=$NAME_SPACE
+    #- kubectl config view --minify | grep namespace # Validate Namesapce
+    #- kubectl config view
+    - kubectl get secret regcred -n $NAME_SPACE || kubectl create secret docker-registry regcred --docker-server=$CI_REGISTRY --docker-username=$DOCKER_TOKEN_ID --docker-password=$DOCKER_TOKEN_PASSWORD  -n $NAME_SPACE
+    - kubectl apply -f ./manifests/k8s/01-todo-config.yml -n $NAME_SPACE
+    - kubectl apply -f ./manifests/k8s/01-todo-mysql-local.yml -n $NAME_SPACE
+    - envsubst < ./manifests/k8s/02-todo-deployment.yml | kubectl apply -n $NAME_SPACE -f -
+    # - envsubst < ./manifests/k8s/02-todo-deployment.yml > ./manifests/k8s/02-todo-deployment_temp.yml
+    # - cat ./manifests/k8s/02-todo-deployment_temp.yml
+    - kubectl apply -f ./manifests/k8s/03-todo-service.yml -n $NAME_SPACE

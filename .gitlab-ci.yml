@@ -5,7 +5,7 @@ stages:
   - deploy
 
 variables:
-  IMAGE_NAME: $CI_REGISTRY_IMAGE/todo:v$CI_PIPELINE_IID
+  IMAGE_NAME: $CI_REGISTRY_IMAGE/todo:v$CI_PIPELINE_ID
   NAME_SPACE: "default"
 
 setup:

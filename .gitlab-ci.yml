@@ -69,6 +69,7 @@ k8s_deploy:
     - kubectl config set-context --current --namespace=$NAME_SPACE
     #- kubectl config view --minify | grep namespace # Validate Namesapce
     #- kubectl config view
+    - kubectl delete --ignore-not-found=true secret regcred
     - kubectl get secret regcred -n $NAME_SPACE || kubectl create secret docker-registry regcred --docker-server=$CI_REGISTRY --docker-username=$DOCKER_TOKEN_ID --docker-password=$DOCKER_TOKEN_PASSWORD  -n $NAME_SPACE
     - kubectl apply -f ./manifests/k8s/01-todo-config.yml -n $NAME_SPACE
     - kubectl apply -f ./manifests/k8s/02-todo-mysql-local.yml -n $NAME_SPACE

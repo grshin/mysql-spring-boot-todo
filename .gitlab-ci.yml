@@ -1,19 +1,47 @@
 stages:
-  - setup
+  - test
   - build
   - package
   - deploy
+  - dast
 
 variables:
   IMAGE_NAME: $CI_REGISTRY_IMAGE/todo:v$CI_PIPELINE_ID
   NAME_SPACE: "default"
+  CODE_QUALITY_DISABLED: "true"
+  DAST_DISABLED: "true"
 
 setup:
-  stage: setup
+  stage: test
   script:
     - echo $CI_JOB_STAGE
     - echo $IMAGE_NAME
-    #- env
+    - env
+
+code_quality:
+  stage: test
+  image: docker:stable
+  allow_failure: true
+  services:
+    - docker:dind
+  #variables:
+  #  DOCKER_HOST: tcp://docker:2375/
+  #  DOCKER_DRIVER: overlay2
+  script:
+    - docker login -u grshin -p $DOCKER_HUB_PASSWORD
+    - >
+      docker run --env SOURCE_CODE="$PWD"
+      --volume "$PWD":/code
+      --volume /var/run/docker.sock:/var/run/docker.sock
+      registry.gitlab.com/gitlab-org/ci-cd/codequality:0.85.10 /code
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
+  only:
+    - branches
+  except:
+    variables:
+      - $CODE_QUALITY_DISABLED
 
 maven_build:
   stage: build
@@ -36,17 +64,15 @@ docker_build:
   image: docker:stable
   services:
     - docker:dind
-  script:
+  before_script:
     - echo $CI_JOB_STAGE
     #- echo $CI_REGISTRY
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY # user "gitlab-ci-token" is automatically created by GitLab
+    - docker info
+  script:
     - docker build -t $IMAGE_NAME .
     - docker push $IMAGE_NAME
     - docker rmi $IMAGE_NAME
-    #- docker image prune -a -f
-    - export temp=$(docker images -f dangling=true -q)
-    - echo $temp
-    - if [ $temp !="" ]; then docker rmi -f "$(docker images -f 'dangling=true' -q)"; else docker image prune -f; fi
   artifacts:
     paths:
       - manifests/k8s
@@ -62,9 +88,9 @@ k8s_deploy:
     #name: ccll/kubectl:1.19
     entrypoint: [""]
   before_script:
+    - echo $CI_JOB_STAGE
     - kubectl version
   script:
-    - echo $CI_JOB_STAGE
     - kubectl get ns
     - kubectl config set-context --current --namespace=$NAME_SPACE
     #- kubectl config view --minify | grep namespace # Validate Namesapce
@@ -77,3 +103,37 @@ k8s_deploy:
     # - envsubst < ./manifests/k8s/03-todo-deployment.yml > ./manifests/k8s/03-todo-deployment_temp.yml
     # - cat ./manifests/k8s/03-todo-deployment_temp.yml
     - kubectl apply -f ./manifests/k8s/04-todo-service.yml -n $NAME_SPACE
+
+dast:
+  stage: dast
+  image: registry.gitlab.com/gitlab-org/security-products/zaproxy
+  variables:
+    website: "http://api.learnk8s.net:8080/"
+  allow_failure: true
+  script:
+    - mkdir /zap/wrk/
+    - /zap/zap-baseline.py -J gl-dast-report.json -t $website || true
+    - cp /zap/wrk/gl-dast-report.json .
+  artifacts:
+    reports:
+      dast: gl-dast-report.json
+  except:
+    variables:
+      - $DAST_DISABLED
+
+dast-review:
+  stage: dast
+  image: registry.gitlab.com/gitlab-org/security-products/zaproxy
+  variables:
+    website: http://${CI_COMMIT_REF_SLUG}-api.learnk8s.net/
+  allow_failure: true
+  script:
+    - mkdir /zap/wrk/
+    - /zap/zap-baseline.py -J gl-dast-report.json -t $website || true
+    - cp /zap/wrk/gl-dast-report.json .
+  artifacts:
+    reports:
+      dast: gl-dast-report.json
+  except:
+    variables:
+      - $DAST_DISABLED

@@ -16,7 +16,7 @@ spec:
       - name: regcred
       containers:
       - name: todo
-        image: grshin/todo:latest
+        image: reg.learnk8s.net/dev/mysql-spring-boot-todo/todo:v$CI_PIPELINE_ID
         imagePullPolicy: Always
         resources:
           limits:

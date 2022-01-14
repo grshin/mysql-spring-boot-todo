@@ -1,0 +1,42 @@
+/* Jenkinsfile.maven
+   필요한 Jenkins plugins
+   - Maven integration
+   - SonarQube Scanner
+*/
+
+pipeline {
+  agent any
+  environment {
+    registry = "https://reg.learnk8s.net/dev/mysql-spring-boot-todo"
+  }  
+  tools {
+    maven "maven 3.8.4"
+    jdk "docker-java-11"
+  }
+  stages {
+    stage ('Initialize') {
+      steps {
+        script {
+          sh '''
+            mvn --version
+            echo "PATH = ${PATH}"
+          '''
+        }
+      }
+    }
+    stage ('Maven Build & SonarQube') {
+      steps {
+        sh "mvn clean package"
+        withSonarQubeEnv(credentialsId: 'sonarqube-token', installationName: 'SonarServer') {
+          sh 'mvn sonar:sonar'
+        }
+      }
+    }
+  }
+  post {
+    always {
+      deleteDir()
+    }
+  }
+}
+

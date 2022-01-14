@@ -1,0 +1,53 @@
+/* Jenkinsfiel.docker
+   필요한 Jenkins Plugins
+   - Maven Integration
+   - Docker Pipeline
+*/
+
+pipeline {
+  agent any
+  environment {
+    registry = "https://reg.learnk8s.net/dev/mysql-spring-boot-todo"
+    imageTag = "reg.learnk8s.net/dev/mysql-spring-boot-todo/todo"
+    registryCredential = 'gitlab-token'
+    VERSION = "$BUILD_NUMBER"
+  }
+  tools {
+    maven "maven 3.8.4"
+    jdk "docker-java-11"
+  }
+  stages {
+    stage ('Initialize') {
+      steps {
+        sh '''
+          mvn --version
+          echo "PATH = ${PATH}"
+          echo "VERSION = $VERSION"
+        '''
+      }
+    }
+    stage ('Maven Build') {
+      steps {
+        //sh "mvn -B -DskipTests clean package -e"
+        sh "mvn clean package"
+      }
+    }
+    stage('Docker Build & Push') {
+      steps{
+        script {
+          dockerImage = docker.build (imageTag+ ":$VERSION")
+          docker.withRegistry( registry, registryCredential ) {
+            dockerImage.push("$VERSION")
+            //dockerImage.push("latest")
+          }          
+        }
+        sh "docker rmi $imageTag:$VERSION"
+      }
+    }
+  }
+  post {
+    always {
+      deleteDir()
+    }
+  }
+}

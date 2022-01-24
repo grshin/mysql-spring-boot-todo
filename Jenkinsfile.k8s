@@ -65,8 +65,7 @@ pipeline {
 
           // secret 존재여부 확인. 미존재시 secret 생성
           sh '''
-             kubectl get secret learnk8s.net -n $NAMESPACE || \
-             kubectl create secret docker-registry learnk8s.net \
+             kubectl get secret learnk8s.net -n $NAMESPACE || kubectl create secret docker-registry learnk8s.net \
                 --docker-server=$registry \
                 --docker-username=$USERNAME \
                 --docker-password=$PASSWORD \

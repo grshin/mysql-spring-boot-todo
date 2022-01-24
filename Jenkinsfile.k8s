@@ -67,8 +67,8 @@ pipeline {
           sh '''
              kubectl get secret learnk8s.net -n $NAMESPACE || kubectl create secret docker-registry learnk8s.net \
                 --docker-server=$registry \
-                --docker-username=$USERNAME \
-                --docker-password=$PASSWORD \
+                --docker-username=$DOCKER_TOKEN_ID \
+                --docker-password=$DOCKER_TOKEN_PASSWORD \
                 --docker-email=grshin@sptek.co.kr \
                 -n $NAMESPACE
              '''

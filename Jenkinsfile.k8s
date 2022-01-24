@@ -32,9 +32,13 @@ pipeline {
         }
       }
     }
-    stage ('Maven Build & SonarQube') {
+    stage ('Maven Build') {
       steps {
         sh "mvn clean package"
+      }
+    }
+    stage ('SonarQube') {
+      steps {
         withSonarQubeEnv(credentialsId: 'sonarqube-token', installationName: 'SonarServer') {
           sh 'mvn sonar:sonar'
         }

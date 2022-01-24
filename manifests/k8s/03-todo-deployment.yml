@@ -13,10 +13,10 @@ spec:
         app: todo
     spec:
       imagePullSecrets:
-      - name: regcred
+      - name: learnk8s.net
       containers:
       - name: todo
-        image: reg.learnk8s.net/dev/mysql-spring-boot-todo/todo:v$CI_PIPELINE_ID
+        image: reg.learnk8s.net/dev/spring-todo/todo:$CI_PIPELINE_ID
         imagePullPolicy: Always
         resources:
           limits:
@@ -25,7 +25,7 @@ spec:
           requests:
             cpu: 0.5
             memory: "500Mi"
-        envEnv:
+        envFrom:
         - configMapRef:
             name: todo-config
         - configMapRef:

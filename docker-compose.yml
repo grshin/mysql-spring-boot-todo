@@ -1,0 +1,36 @@
+version: "3"
+ 
+services:
+  todo:
+    image: todo:latest
+    container_name: todo
+    ports:
+      - 8080:8080
+    environment:
+      TZ: Asia/Seoul
+      JAVA_OPTS: '-server -Xmx1g -Xms1g -Dspring.profiles.active=local'
+      MYSQL_URL: 'jdbc:mysql://mysql:3306/tododb?serverTimezone=Asia/Seoul&characterEncoding=UTF-8'
+      MYSQL_USERNAME: 'todouser'
+      MYSQL_PASSWORD: 'strongpassword1!'
+    restart: always
+    networks:
+      - dbnet
+    links:
+      - db:mariadb
+  db:
+    image: mariadb:10
+    container_name: mysql
+    ports:
+      - 3306:3306
+    volumes:
+      - ./db/conf.d:/etc/mysql/conf.d
+      - ./db/data:/var/lib/mysql
+      - ./db/initdb.d:/docker-entrypoint-initdb.d
+    env_file: .env
+    environment:
+      TZ: Asia/Seoul
+    networks:
+      - dbnet
+    restart: always
+networks:
+  dbnet:

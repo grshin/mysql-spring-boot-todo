@@ -25,3 +25,7 @@ nbdist/
 
 ### DB foler ###
 db/
+
+### Gragle folers ###
+.gradle/
+gradle/
